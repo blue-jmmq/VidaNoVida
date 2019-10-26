@@ -239,7 +239,7 @@ type Celda struct {
 }
 
 type Píxel struct {
-	Color Color
+	Color *Color
 }
 
 type Color struct {
@@ -320,9 +320,9 @@ func (implementación *Implementación) Correr() {
 func (implementación *Implementación) Dibujar() {
 	for y := 0; y < implementación.Juego.Altura; y++ {
 		for x := 0; x < implementación.Juego.Anchura; x++ {
-			píxel := implementación.Juego.Pixeles.Leer(y, x).(Píxel)
-			clr := píxel.Color
-			rojo, verde, azul := clr.Rojo, clr.Verde, clr.Azul
+			píxel := implementación.Juego.Pixeles.Leer(y, x).(*Píxel)
+			color := píxel.Color
+			rojo, verde, azul := color.Rojo, color.Verde, color.Azul
 			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+0] = byte(rojo)
 			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+1] = byte(verde)
 			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+2] = byte(azul)
@@ -397,7 +397,7 @@ type Juego struct {
 	PseudoTamaño    int
 	TamañoDeSímbolo int
 	SímboloVacío    *Símbolo
-	Colores         []Color
+	Colores         []*Color
 	Implementación  *Implementación
 	Altura          int
 	Anchura         int
@@ -405,7 +405,7 @@ type Juego struct {
 
 //CrearDatosDelJuego es una función
 func CrearJuego() *Juego {
-	var juego Juego
+	juego := new(Juego)
 	juego.Anchura = 1024
 	juego.Altura = 512
 	juego.PseudoTamaño = 2
@@ -428,26 +428,42 @@ func CrearJuego() *Juego {
 		juego.SímboloVacío,
 	)
 	juego.Pantalla = pantalla
-	juego.Implementación = CrearImplementación(&juego)
-	juego.Colores = append(juego.Colores, Color{Rojo: 255, Verde: 255, Azul: 255})
-	juego.Colores = append(juego.Colores, Color{Rojo: 0, Verde: 0, Azul: 0})
-	juego.Pixeles = CrearBidimensional(juego.Anchura, juego.Altura, Píxel{Color: Color{Rojo: 0, Verde: 0, Azul: 0}})
-	juego.PseudoPixeles = CrearBidimensional(
+	juego.Implementación = CrearImplementación(juego)
+	juego.Colores = append(juego.Colores, &Color{Rojo: 255, Verde: 255, Azul: 255})
+	juego.Colores = append(juego.Colores, &Color{Rojo: 0, Verde: 0, Azul: 0})
+	//juego.Pixeles = CrearBidimensional(juego.Anchura, juego.Altura, Píxel{Color: Color{Rojo: 0, Verde: 0, Azul: 0}})
+	/*juego.PseudoPixeles = CrearBidimensional(
 		juego.Anchura/juego.PseudoTamaño,
 		juego.Altura/juego.PseudoTamaño,
 		Píxel{Color: Color{Rojo: 0, Verde: 0, Azul: 0}},
-	)
-	return &juego
+	)*/
+	juego.Pixeles = juego.CrearPixeles(juego.Anchura, juego.Altura)
+	juego.PseudoPixeles = juego.CrearPixeles(juego.Anchura/juego.PseudoTamaño, juego.Altura/juego.PseudoTamaño)
+
+	return juego
 }
 
-func (juego *Juego) DibujarPseudoPíxel(píxel Píxel, fila, columna int) {
+func (juego *Juego) CrearPixeles(anchura, altura int) *Bidimensional {
+	pixeles := CrearBidimensional(anchura, altura, nil)
+	for fila := 0; fila < altura; fila++ {
+		for columna := 0; columna < anchura; columna++ {
+			píxel := new(Píxel)
+			píxel.Color = juego.Colores[0]
+			pixeles.Escribir(fila, columna, píxel)
+		}
+	}
+	return pixeles
+}
+
+func (juego *Juego) DibujarPseudoPíxel(color *Color, fila, columna int) {
 	yInicial := fila * juego.PseudoTamaño
 	xInicial := columna * juego.PseudoTamaño
 	yFinal := yInicial + juego.PseudoTamaño
 	xFinal := xInicial + juego.PseudoTamaño
 	for y := yInicial; y < yFinal; y++ {
 		for x := xInicial; x < xFinal; x++ {
-			juego.Pixeles.Escribir(y, x, píxel)
+			píxel := juego.Pixeles.Leer(y, x).(*Píxel)
+			píxel.Color = color
 		}
 	}
 }
@@ -461,9 +477,9 @@ func (juego *Juego) DibujarSímbolo(símbolo *Símbolo, fila, columna int) {
 		for x := xInicial; x < xFinal; x++ {
 			colorIndex := símbolo.Arreglo.Leer(y-yInicial, x-xInicial).(byte)
 			color := juego.Colores[colorIndex]
-			píxel := Píxel{Color: color}
-			juego.PseudoPixeles.Escribir(y, x, píxel)
-			juego.DibujarPseudoPíxel(píxel, y, x)
+			píxel := juego.PseudoPixeles.Leer(y, x).(*Píxel)
+			píxel.Color = color
+			juego.DibujarPseudoPíxel(color, y, x)
 		}
 	}
 }
