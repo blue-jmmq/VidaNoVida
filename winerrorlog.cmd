@@ -1,0 +1,1 @@
+VidaEsVida.exe > error.log 2>&1
