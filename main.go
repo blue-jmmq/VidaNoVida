@@ -4,15 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"image"
-	"image/color"
 	"io/ioutil"
 	"os"
+	"runtime"
 
 	_ "image/png"
 
-	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/pixelgl"
-	"golang.org/x/image/colornames"
+	"github.com/go-gl/gl/v3.3-core/gl"
+	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
 //JSON es una función
@@ -251,8 +250,7 @@ type Color struct {
 
 type Implementación struct {
 	Juego   *Juego
-	Ventana *pixelgl.Window
-	Imagen  *image.RGBA
+	Pixeles []byte
 }
 
 func CrearImplementación(juego *Juego) *Implementación {
@@ -262,49 +260,74 @@ func CrearImplementación(juego *Juego) *Implementación {
 }
 
 func (implementación *Implementación) Correr() {
-	pixelgl.Run(implementación.HiloPrincipal)
-}
-
-func (implementación *Implementación) Dibujar() {
-	for y := 0; y < implementación.Imagen.Rect.Dy(); y++ {
-		for x := 0; x < implementación.Imagen.Rect.Dx(); x++ {
-			píxel := implementación.Juego.Pixeles.Leer(y, x).(Píxel)
-			clr := píxel.Color
-			rgba := color.RGBA{R: clr.Rojo, G: clr.Verde, B: clr.Azul, A: 255}
-			implementación.Imagen.SetRGBA(x, y, rgba)
-		}
-	}
-}
-
-func (implementación *Implementación) HiloPrincipal() {
-	configuración := pixelgl.WindowConfig{
-		Title:  "VidaEsVida",
-		Bounds: pixel.R(0, 0, float64(implementación.Juego.Anchura), float64(implementación.Juego.Altura)),
-		VSync:  true,
-	}
-	ventana, err := pixelgl.NewWindow(configuración)
+	err := glfw.Init()
 	if err != nil {
 		panic(err)
 	}
+	defer glfw.Terminate()
+
+	glfw.WindowHint(glfw.Resizable, glfw.False)
+	glfw.WindowHint(glfw.ContextVersionMajor, 3) // OR 2
+	glfw.WindowHint(glfw.ContextVersionMinor, 3)
+	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
+	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
+
+	window, err := glfw.CreateWindow(implementación.Juego.Anchura, implementación.Juego.Altura, "Testing", nil, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	window.MakeContextCurrent()
+
+	if err := gl.Init(); err != nil {
+		panic(err)
+	}
+	version := gl.GoStr(gl.GetString(gl.VERSION))
+	fmt.Println("OpenGL version", version)
+
+	implementación.Pixeles = make([]byte, implementación.Juego.Anchura*implementación.Juego.Altura*4)
 	implementación.Juego.Dibujar()
-	implementación.Imagen = image.NewRGBA(
-		image.Rect(
-			0,
-			0,
-			implementación.Juego.Pixeles.LeerAnchura(),
-			implementación.Juego.Pixeles.LeerAltura(),
-		),
-	)
 	implementación.Dibujar()
+	var texture uint32
+	gl.GenTextures(1, &texture)
+	gl.BindTexture(gl.TEXTURE_2D, texture)
+	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura), 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
 
-	cuadro := pixel.PictureDataFromImage(implementación.Imagen)
-	sprite := pixel.NewSprite(cuadro, cuadro.Bounds())
+	var frameBuffer uint32
+	gl.GenFramebuffers(1, &frameBuffer)
+	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, frameBuffer)
+	gl.FramebufferTexture2D(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0)
+	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
 
-	ventana.Clear(colornames.Skyblue)
-	sprite.Draw(ventana, pixel.IM.Moved(ventana.Bounds().Center()))
+	//gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
+	gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(implementación.Pixeles))
+	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, frameBuffer)
+	gl.BlitFramebuffer(0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura),
+		0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura),
+		gl.COLOR_BUFFER_BIT, gl.LINEAR)
+	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
+	window.SwapBuffers()
+	for !window.ShouldClose() {
+		//var frameBuffer uint32
+		//gl.GenFramebuffers(1, &frameBuffer)
+		// Do OpenGL stuff.
+		//
 
-	for !ventana.Closed() {
-		ventana.Update()
+		glfw.PollEvents()
+	}
+}
+
+func (implementación *Implementación) Dibujar() {
+	for y := 0; y < implementación.Juego.Altura; y++ {
+		for x := 0; x < implementación.Juego.Anchura; x++ {
+			píxel := implementación.Juego.Pixeles.Leer(y, x).(Píxel)
+			clr := píxel.Color
+			rojo, verde, azul := clr.Rojo, clr.Verde, clr.Azul
+			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+0] = byte(rojo)
+			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+1] = byte(verde)
+			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+2] = byte(azul)
+			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+3] = 255
+		}
 	}
 }
 
@@ -461,6 +484,12 @@ func (juego *Juego) Dibujar() {
 
 func (juego *Juego) Jugar() {
 	juego.Implementación.Correr()
+}
+
+func init() {
+	// This is needed to arrange that main() runs on main thread.
+	// See documentation for functions that are only allowed to be called from the main thread.
+	runtime.LockOSThread()
 }
 
 func main() {
