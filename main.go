@@ -67,6 +67,19 @@ type WidgetDeSalida struct {
 	Índice   int
 }
 
+func (widget *WidgetDeSalida) DesplazarseHaciaAbajo(fuente *Fuente) {
+	altura := len(widget.Búfer)
+	if widget.Índice < altura {
+		widget.Índice++
+		widget.ActualizarSímbolos(fuente)
+	}
+}
+func (widget *WidgetDeSalida) DesplazarseHaciaArriba(fuente *Fuente) {
+	if widget.Índice > 0 {
+		widget.Índice--
+		widget.ActualizarSímbolos(fuente)
+	}
+}
 func (widget *WidgetDeSalida) AñadirEntrada(entrada *Bidimensional) {
 	for fila := 0; fila < entrada.LeerAltura(); fila++ {
 		var línea []*Símbolo
@@ -98,9 +111,15 @@ func (widget *WidgetDeSalida) ActualizarSímbolos(fuente *Fuente) {
 			}
 		}
 	} else {
-		for fila := 0; fila < widget.Símbolos.LeerAltura(); fila++ {
+		var fila int
+		for fila = 0; fila < widget.Símbolos.LeerAltura()-len(widget.Búfer)+widget.Índice; fila++ {
 			for columna := 0; columna < widget.Símbolos.LeerAnchura(); columna++ {
 				widget.Símbolos.Escribir(fila, columna, widget.Búfer[fila+widget.Índice][columna])
+			}
+		}
+		for ; fila < widget.Símbolos.LeerAltura(); fila++ {
+			for columna := 0; columna < widget.Símbolos.LeerAnchura(); columna++ {
+				widget.Símbolos.Escribir(fila, columna, fuente.Símbolos[" "])
 			}
 		}
 	}
@@ -380,7 +399,17 @@ func CrearImplementación(juego *Juego) *Implementación {
 	implementación.Juego = juego
 	return &implementación
 }
-
+func (implementación *Implementación) LlamadaDeTecla(ventana *glfw.Window, tecla glfw.Key, scancode int, acción glfw.Action, mods glfw.ModifierKey) {
+	if tecla == glfw.KeyUp && ((acción == glfw.Press) || (acción == glfw.Repeat)) {
+		implementación.Juego.IU.WidgetDeSalida.DesplazarseHaciaArriba(implementación.Juego.Fuente)
+		implementación.Juego.Dibujar()
+	}
+	if tecla == glfw.KeyDown && ((acción == glfw.Press) || (acción == glfw.Repeat)) {
+		implementación.Juego.IU.WidgetDeSalida.DesplazarseHaciaAbajo(implementación.Juego.Fuente)
+		implementación.Juego.Dibujar()
+	}
+	//Imprimir("tecla", tecla, glfw.KeyUp, glfw.GetKeyName(tecla, scancode), scancode)
+}
 func (implementación *Implementación) Correr() {
 	err := glfw.Init()
 	if err != nil {
@@ -429,6 +458,7 @@ func (implementación *Implementación) Correr() {
 		window.SwapBuffers()
 	*/
 	//implementación.Juego.Dibujar()
+	window.SetKeyCallback(implementación.LlamadaDeTecla)
 	go implementación.Juego.HiloLógico()
 	for !window.ShouldClose() {
 		//var frameBuffer uint32
@@ -718,6 +748,7 @@ func (juego *Juego) HiloLógico() {
 	//juego.Escribir("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	for i := 0; i < 64; i++ {
 		juego.Escribir("i: " + strconv.Itoa(i))
+		Imprimir(i)
 	}
 	juego.Dibujar()
 	//Imprimir("juego.Escribir(\"Bienvenido a VidaEsVida\"")
