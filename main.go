@@ -101,7 +101,7 @@ func (widget *WidgetDeSalida) ActualizarSímbolos(fuente *Fuente) {
 	alturaDelBúfer := len(widget.Búfer)
 	if alturaDelBúfer < widget.Altura {
 		for fila := 0; fila < alturaDelBúfer; fila++ {
-			for columna := 0; columna < widget.Símbolos.LeerAnchura(); columna++ {
+			for columna := 0; columna < widget.Anchura; columna++ {
 				widget.Símbolos.Escribir(fila, columna, widget.Búfer[fila][columna])
 			}
 		}
@@ -110,16 +110,29 @@ func (widget *WidgetDeSalida) ActualizarSímbolos(fuente *Fuente) {
 				widget.Símbolos.Escribir(fila, columna, fuente.Símbolos[" "])
 			}
 		}
-	} else {
+	} else if widget.Índice+widget.Altura <= alturaDelBúfer {
+		//Imprimir("widget.Altura", widget.Altura)
+		//Imprimir("alturaDelBúfer", alturaDelBúfer)
+		//Imprimir("widget.Índice", widget.Índice)
 		var fila int
-		for fila = 0; fila < widget.Símbolos.LeerAltura()-len(widget.Búfer)+widget.Índice; fila++ {
-			for columna := 0; columna < widget.Símbolos.LeerAnchura(); columna++ {
-				widget.Símbolos.Escribir(fila, columna, widget.Búfer[fila+widget.Índice][columna])
+		for fila = widget.Índice; fila < widget.Índice+widget.Altura; fila++ {
+			for columna := 0; columna < widget.Anchura; columna++ {
+				widget.Símbolos.Escribir(fila-widget.Índice, columna, widget.Búfer[fila][columna])
 			}
 		}
-		for ; fila < widget.Símbolos.LeerAltura(); fila++ {
-			for columna := 0; columna < widget.Símbolos.LeerAnchura(); columna++ {
-				widget.Símbolos.Escribir(fila, columna, fuente.Símbolos[" "])
+	} else {
+		//Imprimir("widget.Altura", widget.Altura)
+		//Imprimir("alturaDelBúfer", alturaDelBúfer)
+		//Imprimir("widget.Índice", widget.Índice)
+		var fila int
+		for fila = widget.Índice; fila < alturaDelBúfer; fila++ {
+			for columna := 0; columna < widget.Anchura; columna++ {
+				widget.Símbolos.Escribir(fila-widget.Índice, columna, widget.Búfer[fila][columna])
+			}
+		}
+		for ; fila < widget.Índice+widget.Altura; fila++ {
+			for columna := 0; columna < widget.Anchura; columna++ {
+				widget.Símbolos.Escribir(fila-widget.Índice, columna, fuente.Símbolos[" "])
 			}
 		}
 	}
