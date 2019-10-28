@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"time"
 
 	_ "image/png"
 
@@ -43,20 +44,161 @@ func ImprimirIdentado(interfaz interface{}) {
 }
 
 type WidgetDeEntrada struct {
-	Anchura  int
-	Altura   int
-	Símbolos *Bidimensional
+	Anchura           int
+	Altura            int
+	Símbolos          *Bidimensional
+	Búfer             []*Símbolo
+	InicioVisible     int
+	Índice            int
+	TamañoVisual      int
+	DeboDibujarCursor bool
+}
+
+func (widget *WidgetDeEntrada) Tick() {
+	widget.DeboDibujarCursor = !widget.DeboDibujarCursor
+}
+
+func (widget *WidgetDeEntrada) EliminarSímbolo() {
+	widget.DeboDibujarCursor = true
+	if widget.Índice > 0 {
+		var provicional []*Símbolo
+		provicional = append(provicional, widget.Búfer[0:widget.Índice-1]...)
+		provicional = append(provicional, widget.Búfer[widget.Índice:]...)
+		widget.Búfer = provicional
+		widget.DesplazarCursor(-1)
+	}
+}
+
+func (widget *WidgetDeEntrada) Escribir(símbolo *Símbolo) {
+	widget.DeboDibujarCursor = true
+	var provicional []*Símbolo
+	provicional = append(provicional, widget.Búfer[:widget.Índice]...)
+	provicional = append(provicional, símbolo)
+	provicional = append(provicional, widget.Búfer[widget.Índice:]...)
+	widget.Búfer = provicional
+	widget.DesplazarCursor(1)
+}
+
+func (widget *WidgetDeEntrada) DesplazarCursor(delta int) {
+	widget.DeboDibujarCursor = true
+	widget.Índice += delta
+	if widget.Índice < 0 {
+		widget.Índice = 0
+		widget.InicioVisible = 0
+		return
+	}
+	if widget.Índice > len(widget.Búfer) {
+		widget.Índice -= delta
+		return
+	}
+	if widget.Índice >= widget.InicioVisible && widget.Índice < widget.InicioVisible+widget.TamañoVisual {
+		return
+	}
+	if delta < 0 {
+		widget.InicioVisible = widget.Índice
+	} else {
+		widget.InicioVisible = widget.Índice - widget.TamañoVisual
+	}
 }
 
 func (widget *WidgetDeEntrada) LlenarSímbolos(fuente *Fuente) {
 	for columna := 0; columna < widget.Anchura; columna++ {
 		widget.Símbolos.Escribir(0, columna, fuente.Símbolos["bloque"])
 	}
+	for columna := 0; columna < widget.Anchura; columna++ {
+		widget.Símbolos.Escribir(1, columna, fuente.Símbolos[" "])
+	}
+	widget.Símbolos.Escribir(1, 1, fuente.Símbolos["C"])
 
 	for columna := 0; columna < widget.Anchura; columna++ {
 		widget.Símbolos.Escribir(2, columna, fuente.Símbolos["bloque"])
 	}
 }
+
+func (widget *WidgetDeEntrada) Leer(fila, columna int, fuente *Fuente) *Símbolo {
+	switch fila {
+	case 0:
+		return fuente.Símbolos["bloque"]
+	case 1:
+		if columna >= 0 && columna < 3 {
+			if columna == 1 {
+				return fuente.Símbolos["C"]
+			}
+			return fuente.Símbolos[" "]
+		}
+		if columna == widget.Anchura-1 {
+			return fuente.Símbolos[" "]
+		}
+		columna -= 3
+		columna += widget.InicioVisible
+		if columna == widget.Índice && widget.DeboDibujarCursor {
+			return fuente.Símbolos["bloque"]
+		}
+		if columna < len(widget.Búfer) {
+			return widget.Búfer[columna]
+		}
+		return fuente.Símbolos[" "]
+	case 2:
+		return fuente.Símbolos["bloque"]
+	}
+	return fuente.Símbolos["nulo"]
+}
+
+/*
+func (widget *WidgetDeEntrada) ActualizarSímbolos(fuente *Fuente) {
+	tamañoDelBúfer := len(widget.Búfer)
+	columnaInicial := 3
+	var índice int
+	Imprimir("widget.Índice", widget.Índice)
+	if tamañoDelBúfer < widget.TamañoVisual {
+		for columna := columnaInicial; columna < tamañoDelBúfer+columnaInicial; columna++ {
+			índice = columna - columnaInicial
+			if índice == widget.Índice {
+				widget.Símbolos.Escribir(1, columna, fuente.Símbolos["bloque"])
+			} else {
+				widget.Símbolos.Escribir(1, columna, widget.Búfer[índice])
+			}
+		}
+		for columna := tamañoDelBúfer + columnaInicial; columna < widget.TamañoVisual+columnaInicial; columna++ {
+			índice = columna - columnaInicial
+			if índice == widget.Índice {
+				widget.Símbolos.Escribir(1, columna, fuente.Símbolos["bloque"])
+			} else {
+				widget.Símbolos.Escribir(1, columna, fuente.Símbolos[" "])
+			}
+		}
+	} else if tamañoDelBúfer == widget.TamañoVisual {
+		for columna := columnaInicial; columna < widget.TamañoVisual+columnaInicial; columna++ {
+			índice = columna - columnaInicial
+			if índice == widget.Índice {
+				widget.Símbolos.Escribir(1, columna, fuente.Símbolos["bloque"])
+			} else {
+				widget.Símbolos.Escribir(1, columna, widget.Búfer[índice])
+			}
+		}
+		índice = widget.TamañoVisual
+		if índice == widget.Índice {
+			widget.Símbolos.Escribir(1, columna, fuente.Símbolos["bloque"])
+		}
+	} else {
+		Imprimir("tamañoDelBúfer", tamañoDelBúfer)
+		Imprimir("widget.TamañoVisual", widget.TamañoVisual)
+		Imprimir("tamañoDelBúfer - widget.TamañoVisual", tamañoDelBúfer-widget.TamañoVisual)
+		for columna := columnaInicial; columna < widget.TamañoVisual+columnaInicial; columna++ {
+			índice = tamañoDelBúfer - widget.TamañoVisual + columna - columnaInicial
+			if índice == widget.Índice {
+				widget.Símbolos.Escribir(1, columna, fuente.Símbolos["bloque"])
+			} else {
+				widget.Símbolos.Escribir(1, columna, widget.Búfer[índice])
+			}
+		}
+		índice = widget.TamañoVisual
+		if índice == widget.Índice {
+			widget.Símbolos.Escribir(1, columna, fuente.Símbolos["bloque"])
+		}
+	}
+
+}*/
 
 type WidgetDeSalida struct {
 	Anchura  int
@@ -110,17 +252,7 @@ func (widget *WidgetDeSalida) ActualizarSímbolos(fuente *Fuente) {
 				widget.Símbolos.Escribir(fila, columna, fuente.Símbolos[" "])
 			}
 		}
-	} else if widget.Índice+widget.Altura <= alturaDelBúfer {
-		//Imprimir("widget.Altura", widget.Altura)
-		//Imprimir("alturaDelBúfer", alturaDelBúfer)
-		//Imprimir("widget.Índice", widget.Índice)
-		var fila int
-		for fila = widget.Índice; fila < widget.Índice+widget.Altura; fila++ {
-			for columna := 0; columna < widget.Anchura; columna++ {
-				widget.Símbolos.Escribir(fila-widget.Índice, columna, widget.Búfer[fila][columna])
-			}
-		}
-	} else {
+	} else if alturaDelBúfer < widget.Índice+widget.Altura {
 		//Imprimir("widget.Altura", widget.Altura)
 		//Imprimir("alturaDelBúfer", alturaDelBúfer)
 		//Imprimir("widget.Índice", widget.Índice)
@@ -133,6 +265,16 @@ func (widget *WidgetDeSalida) ActualizarSímbolos(fuente *Fuente) {
 		for ; fila < widget.Índice+widget.Altura; fila++ {
 			for columna := 0; columna < widget.Anchura; columna++ {
 				widget.Símbolos.Escribir(fila-widget.Índice, columna, fuente.Símbolos[" "])
+			}
+		}
+
+	} else {
+		//Imprimir("widget.Altura", widget.Altura)
+		//Imprimir("alturaDelBúfer", alturaDelBúfer)
+		//Imprimir("widget.Índice", widget.Índice)
+		for fila := widget.Índice; fila < widget.Índice+widget.Altura; fila++ {
+			for columna := 0; columna < widget.Anchura; columna++ {
+				widget.Símbolos.Escribir(fila-widget.Índice, columna, widget.Búfer[fila][columna])
 			}
 		}
 	}
@@ -412,6 +554,7 @@ func CrearImplementación(juego *Juego) *Implementación {
 	implementación.Juego = juego
 	return &implementación
 }
+
 func (implementación *Implementación) LlamadaDeTecla(ventana *glfw.Window, tecla glfw.Key, scancode int, acción glfw.Action, mods glfw.ModifierKey) {
 	if tecla == glfw.KeyUp && ((acción == glfw.Press) || (acción == glfw.Repeat)) {
 		implementación.Juego.IU.WidgetDeSalida.DesplazarseHaciaArriba(implementación.Juego.Fuente)
@@ -421,8 +564,28 @@ func (implementación *Implementación) LlamadaDeTecla(ventana *glfw.Window, tec
 		implementación.Juego.IU.WidgetDeSalida.DesplazarseHaciaAbajo(implementación.Juego.Fuente)
 		implementación.Juego.Dibujar()
 	}
+	if tecla == glfw.KeyLeft && ((acción == glfw.Press) || (acción == glfw.Repeat)) {
+		implementación.Juego.IU.WidgetDeEntrada.DesplazarCursor(-1)
+		implementación.Juego.Tick()
+	}
+	if tecla == glfw.KeyRight && ((acción == glfw.Press) || (acción == glfw.Repeat)) {
+		implementación.Juego.IU.WidgetDeEntrada.DesplazarCursor(1)
+		implementación.Juego.Tick()
+	}
+	if tecla == glfw.KeyBackspace && ((acción == glfw.Press) || (acción == glfw.Repeat)) {
+		implementación.Juego.IU.WidgetDeEntrada.EliminarSímbolo()
+		implementación.Juego.Tick()
+	}
 	//Imprimir("tecla", tecla, glfw.KeyUp, glfw.GetKeyName(tecla, scancode), scancode)
 }
+
+func (implementación *Implementación) LlamadaDeTexto(ventana *glfw.Window, runa rune) {
+	símbolo := implementación.Juego.RunaASímbolo(runa)
+	implementación.Juego.IU.WidgetDeEntrada.Escribir(símbolo)
+	implementación.Juego.Tick()
+	//Imprimir("Runa:", string(runa))
+}
+
 func (implementación *Implementación) Correr() {
 	err := glfw.Init()
 	if err != nil {
@@ -436,12 +599,12 @@ func (implementación *Implementación) Correr() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	window, err := glfw.CreateWindow(implementación.Juego.Anchura, implementación.Juego.Altura, "Testing", nil, nil)
+	ventana, err := glfw.CreateWindow(implementación.Juego.Anchura, implementación.Juego.Altura, "Testing", nil, nil)
 	if err != nil {
 		panic(err)
 	}
-	implementación.Ventana = window
-	window.MakeContextCurrent()
+	implementación.Ventana = ventana
+	ventana.MakeContextCurrent()
 
 	if err := gl.Init(); err != nil {
 		panic(err)
@@ -471,9 +634,12 @@ func (implementación *Implementación) Correr() {
 		window.SwapBuffers()
 	*/
 	//implementación.Juego.Dibujar()
-	window.SetKeyCallback(implementación.LlamadaDeTecla)
+	ventana.SetKeyCallback(implementación.LlamadaDeTecla)
+	ventana.SetCharCallback(implementación.LlamadaDeTexto)
+	implementación.Juego.TemporizadorDelCursor = time.NewTimer(512 * time.Millisecond)
+	go implementación.Juego.BucleDelTemporizador()
 	go implementación.Juego.HiloLógico()
-	for !window.ShouldClose() {
+	for !ventana.ShouldClose() {
 		//var frameBuffer uint32
 		//gl.GenFramebuffers(1, &frameBuffer)
 		// Do OpenGL stuff.
@@ -567,19 +733,20 @@ func (fuente *Fuente) LeerImágenes() {
 }
 
 type Juego struct {
-	IU              *IU
-	Pantalla        *Pantalla
-	Fuente          *Fuente
-	Pixeles         *Bidimensional
-	PseudoPixeles   *Bidimensional
-	PseudoTamaño    int
-	TamañoDeSímbolo int
-	SímboloVacío    *Símbolo
-	Colores         []*Color
-	Implementación  *Implementación
-	Altura          int
-	Anchura         int
-	HayQueDibujar   bool
+	IU                    *IU
+	Pantalla              *Pantalla
+	Fuente                *Fuente
+	Pixeles               *Bidimensional
+	PseudoPixeles         *Bidimensional
+	PseudoTamaño          int
+	TamañoDeSímbolo       int
+	SímboloVacío          *Símbolo
+	Colores               []*Color
+	Implementación        *Implementación
+	Altura                int
+	Anchura               int
+	HayQueDibujar         bool
+	TemporizadorDelCursor *time.Timer
 }
 
 //CrearDatosDelJuego es una función
@@ -628,6 +795,8 @@ func (juego *Juego) CrearWidgetDeEntrada() *WidgetDeEntrada {
 	widgetDeEntrada := new(WidgetDeEntrada)
 	widgetDeEntrada.Anchura = juego.IU.Anchura
 	widgetDeEntrada.Altura = 3
+	widgetDeEntrada.Búfer = make([]*Símbolo, 0)
+	widgetDeEntrada.TamañoVisual = widgetDeEntrada.Anchura - 5
 	widgetDeEntrada.Símbolos = CrearBidimensional(widgetDeEntrada.Anchura, widgetDeEntrada.Altura, juego.Fuente.Símbolos["nulo"])
 	widgetDeEntrada.LlenarSímbolos(juego.Fuente)
 	return widgetDeEntrada
@@ -707,7 +876,7 @@ func (juego *Juego) ActualizarIU() {
 	}
 	for fila := juego.IU.WidgetDeSalida.Altura; fila < juego.IU.WidgetDeSalida.Altura+juego.IU.WidgetDeEntrada.Altura; fila++ {
 		for columna := 0; columna < juego.IU.WidgetDeEntrada.Anchura; columna++ {
-			juego.IU.Símbolos.Escribir(fila, columna, juego.IU.WidgetDeEntrada.Símbolos.Leer(fila-juego.IU.WidgetDeSalida.Altura, columna))
+			juego.IU.Símbolos.Escribir(fila, columna, juego.IU.WidgetDeEntrada.Leer(fila-juego.IU.WidgetDeSalida.Altura, columna, juego.Fuente))
 		}
 	}
 }
@@ -721,6 +890,22 @@ func (juego *Juego) ActualizarPantalla() {
 	}
 }
 
+func (juego *Juego) Tick() {
+	juego.TemporizadorDelCursor.Reset(512 * time.Millisecond)
+	juego.Dibujar()
+
+}
+
+func (juego *Juego) BucleDelTemporizador() {
+	for {
+		<-juego.TemporizadorDelCursor.C
+		juego.IU.WidgetDeEntrada.Tick()
+		juego.Tick()
+		//Imprimir("Timer 1 expired")
+	}
+
+}
+
 func (juego *Juego) Dibujar() {
 	juego.ActualizarPantalla()
 	for fila := 0; fila < juego.Pantalla.LeerAltura(); fila++ {
@@ -729,6 +914,16 @@ func (juego *Juego) Dibujar() {
 		}
 	}
 	juego.HayQueDibujar = true
+}
+
+func (juego *Juego) RunaASímbolo(runa rune) *Símbolo {
+	cadena := string(runa)
+	cadena = strings.ToUpper(cadena)
+	símbolo := juego.Fuente.Símbolos[cadena]
+	if símbolo == nil {
+		símbolo = juego.Fuente.Símbolos["nulo"]
+	}
+	return símbolo
 }
 
 func (juego *Juego) CadenaASímbolos(cadena string) []*Símbolo {
@@ -761,7 +956,7 @@ func (juego *Juego) HiloLógico() {
 	//juego.Escribir("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
 	for i := 0; i < 64; i++ {
 		juego.Escribir("i: " + strconv.Itoa(i))
-		Imprimir(i)
+		//Imprimir(i)
 	}
 	juego.Dibujar()
 	//Imprimir("juego.Escribir(\"Bienvenido a VidaEsVida\"")
