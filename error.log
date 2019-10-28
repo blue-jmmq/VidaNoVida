@@ -1,46 +1,18 @@
-Runas: [[A A] [Á Á] [B B] [C C] [D D] [E E] [F F] [G G] [H H] [I I] [Í Í] [J J] [K K] [L L] [M M] [N N] [Ñ Ñ] [O O] [Ó Ó] [P P] [Q Q] [R R] [S S] [R R] [T T] [U U] [Ú Ú] [V V] [W W] [X X] [Y Y] [Ý Ý] [Z Z] [0 0] [1 1] [2 2] [3 3] [4 4] [5 5] [6 6] [7 7] [8 8] [9 9]]
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-string
-Runas: map[]
-"png"
+OpenGL version 3.3.0 NVIDIA 436.30
+panic: runtime error: index out of range [509] with length 3
+
+goroutine 1 [running, locked to thread]:
+main.(*Bidimensional).Leer(...)
+	C:/Users/Blue/go/src/github.com/blue-jmmq/VidaEsVida/main.go:196
+main.(*Juego).ActualizarIU(0xc00008e000)
+	C:/Users/Blue/go/src/github.com/blue-jmmq/VidaEsVida/main.go:599 +0x1d6
+main.(*Juego).ActualizarPantalla(0xc00008e000)
+	C:/Users/Blue/go/src/github.com/blue-jmmq/VidaEsVida/main.go:605 +0x36
+main.(*Juego).Dibujar(0xc00008e000)
+	C:/Users/Blue/go/src/github.com/blue-jmmq/VidaEsVida/main.go:614 +0x36
+main.(*Implementación).Correr(0xc000005200)
+	C:/Users/Blue/go/src/github.com/blue-jmmq/VidaEsVida/main.go:361 +0x2b6
+main.(*Juego).Jugar(...)
+	C:/Users/Blue/go/src/github.com/blue-jmmq/VidaEsVida/main.go:627
+main.main()
+	C:/Users/Blue/go/src/github.com/blue-jmmq/VidaEsVida/main.go:642 +0x3b

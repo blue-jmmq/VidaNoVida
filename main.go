@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
+	"strconv"
+	"strings"
 
 	_ "image/png"
 
@@ -38,6 +40,124 @@ func ImprimirJSON(interfaz interface{}) {
 //ImprimirIdentado es una función
 func ImprimirIdentado(interfaz interface{}) {
 	fmt.Println(JSONIdentado(interfaz))
+}
+
+type WidgetDeEntrada struct {
+	Anchura  int
+	Altura   int
+	Símbolos *Bidimensional
+}
+
+func (widget *WidgetDeEntrada) LlenarSímbolos(fuente *Fuente) {
+	for columna := 0; columna < widget.Anchura; columna++ {
+		widget.Símbolos.Escribir(0, columna, fuente.Símbolos["bloque"])
+	}
+
+	for columna := 0; columna < widget.Anchura; columna++ {
+		widget.Símbolos.Escribir(2, columna, fuente.Símbolos["bloque"])
+	}
+}
+
+type WidgetDeSalida struct {
+	Anchura  int
+	Altura   int
+	Símbolos *Bidimensional
+	Búfer    [][]*Símbolo
+	Entradas []*Bidimensional
+	Índice   int
+}
+
+func (widget *WidgetDeSalida) AñadirEntrada(entrada *Bidimensional) {
+	for fila := 0; fila < entrada.LeerAltura(); fila++ {
+		var línea []*Símbolo
+		for columna := 0; columna < entrada.LeerAnchura(); columna++ {
+			línea = append(línea, entrada.Leer(fila, columna).(*Símbolo))
+		}
+		widget.Búfer = append(widget.Búfer, línea)
+	}
+}
+
+func (widget *WidgetDeSalida) ActualizarÍndice() {
+	alturaDelBúfer := len(widget.Búfer)
+	if alturaDelBúfer >= widget.Altura {
+		widget.Índice = alturaDelBúfer - widget.Altura
+	}
+}
+
+func (widget *WidgetDeSalida) ActualizarSímbolos(fuente *Fuente) {
+	alturaDelBúfer := len(widget.Búfer)
+	if alturaDelBúfer < widget.Altura {
+		for fila := 0; fila < alturaDelBúfer; fila++ {
+			for columna := 0; columna < widget.Símbolos.LeerAnchura(); columna++ {
+				widget.Símbolos.Escribir(fila, columna, widget.Búfer[fila][columna])
+			}
+		}
+		for fila := len(widget.Búfer); fila < len(widget.Búfer); fila++ {
+			for columna := 0; columna < widget.Símbolos.LeerAnchura(); columna++ {
+				widget.Símbolos.Escribir(fila, columna, fuente.Símbolos[" "])
+			}
+		}
+	} else {
+		for fila := 0; fila < widget.Símbolos.LeerAltura(); fila++ {
+			for columna := 0; columna < widget.Símbolos.LeerAnchura(); columna++ {
+				widget.Símbolos.Escribir(fila, columna, widget.Búfer[fila+widget.Índice][columna])
+			}
+		}
+	}
+}
+
+func (widget *WidgetDeSalida) Escribir(línea []*Símbolo, fuente *Fuente) {
+	entrada := widget.LíneaAEntrada(línea, fuente)
+	widget.Entradas = append(widget.Entradas, entrada)
+	widget.AñadirEntrada(entrada)
+	widget.ActualizarÍndice()
+	widget.ActualizarSímbolos(fuente)
+}
+
+//GetDrawableLines function
+func (widget *WidgetDeSalida) LíneaAEntrada(línea []*Símbolo, fuente *Fuente) *Bidimensional {
+	var entrada *Bidimensional
+	anchura := widget.Anchura
+	var altura int
+	cantidadaDeSímbolos := len(línea)
+	if cantidadaDeSímbolos <= widget.Anchura {
+		altura = 1
+		entrada = CrearBidimensional(anchura, altura, fuente.Símbolos[" "])
+		for columna := 0; columna < cantidadaDeSímbolos; columna++ {
+			entrada.Escribir(0, columna, línea[columna])
+		}
+	} else {
+		cantidadDeLíneasCompletas := cantidadaDeSímbolos / anchura
+		cantidadDeSímbolosSobrantes := cantidadaDeSímbolos % anchura
+		sobranSímbolos := cantidadDeSímbolosSobrantes > 0
+		if sobranSímbolos {
+			altura = cantidadDeLíneasCompletas + 1
+		} else {
+			altura = cantidadDeLíneasCompletas
+		}
+		entrada = CrearBidimensional(anchura, altura, fuente.Símbolos[" "])
+
+		for fila := 0; fila < cantidadDeLíneasCompletas; fila++ {
+			for columna := 0; columna < anchura; columna++ {
+				entrada.Escribir(fila, columna, línea[fila*anchura+columna])
+			}
+		}
+		if sobranSímbolos {
+			fila := cantidadDeLíneasCompletas
+			for columna := 0; columna < cantidadDeSímbolosSobrantes; columna++ {
+				entrada.Escribir(fila, columna, línea[fila*anchura+columna])
+			}
+		}
+	}
+	return entrada
+}
+
+type IU struct {
+	WidgetDeSalida  *WidgetDeSalida
+	WidgetDeEntrada *WidgetDeEntrada
+	Anchura         int
+	Altura          int
+	Símbolos        *Bidimensional
 }
 
 type Toro struct {
@@ -251,6 +371,8 @@ type Color struct {
 type Implementación struct {
 	Juego   *Juego
 	Pixeles []byte
+	Ventana *glfw.Window
+	búfer   uint32
 }
 
 func CrearImplementación(juego *Juego) *Implementación {
@@ -276,7 +398,7 @@ func (implementación *Implementación) Correr() {
 	if err != nil {
 		panic(err)
 	}
-
+	implementación.Ventana = window
 	window.MakeContextCurrent()
 
 	if err := gl.Init(); err != nil {
@@ -286,61 +408,74 @@ func (implementación *Implementación) Correr() {
 	fmt.Println("OpenGL version", version)
 
 	implementación.Pixeles = make([]byte, implementación.Juego.Anchura*implementación.Juego.Altura*4)
-	implementación.Juego.Dibujar()
-	implementación.Dibujar()
 	var texture uint32
 	gl.GenTextures(1, &texture)
 	gl.BindTexture(gl.TEXTURE_2D, texture)
 	gl.TexImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura), 0, gl.RGBA, gl.UNSIGNED_BYTE, nil)
 
-	var frameBuffer uint32
-	gl.GenFramebuffers(1, &frameBuffer)
-	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, frameBuffer)
+	gl.GenFramebuffers(1, &implementación.búfer)
+	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, implementación.búfer)
 	gl.FramebufferTexture2D(gl.READ_FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0)
 	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
 
 	//gl.BindFramebuffer(gl.DRAW_FRAMEBUFFER, 0)
-	gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(implementación.Pixeles))
-	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, frameBuffer)
-	gl.BlitFramebuffer(0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura),
-		0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura),
-		gl.COLOR_BUFFER_BIT, gl.LINEAR)
-	gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
-	window.SwapBuffers()
+	/*
+		gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(implementación.Pixeles))
+		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, implementación.búfer)
+		gl.BlitFramebuffer(0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura),
+			0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura),
+			gl.COLOR_BUFFER_BIT, gl.LINEAR)
+		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
+		window.SwapBuffers()
+	*/
+	//implementación.Juego.Dibujar()
+	go implementación.Juego.HiloLógico()
 	for !window.ShouldClose() {
 		//var frameBuffer uint32
 		//gl.GenFramebuffers(1, &frameBuffer)
 		// Do OpenGL stuff.
 		//
+		implementación.Dibujar()
 
 		glfw.PollEvents()
 	}
 }
 
 func (implementación *Implementación) Dibujar() {
-	for y := 0; y < implementación.Juego.Altura; y++ {
-		for x := 0; x < implementación.Juego.Anchura; x++ {
-			píxel := implementación.Juego.Pixeles.Leer(y, x).(*Píxel)
-			color := píxel.Color
-			rojo, verde, azul := color.Rojo, color.Verde, color.Azul
-			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+0] = byte(rojo)
-			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+1] = byte(verde)
-			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+2] = byte(azul)
-			implementación.Pixeles[y*implementación.Juego.Anchura*4+x*4+3] = 255
+	if implementación.Juego.HayQueDibujar {
+		for y := 0; y < implementación.Juego.Altura; y++ {
+			for x := 0; x < implementación.Juego.Anchura; x++ {
+				píxel := implementación.Juego.Pixeles.Leer(y, x).(*Píxel)
+				color := píxel.Color
+				rojo, verde, azul := color.Rojo, color.Verde, color.Azul
+				fila := implementación.Juego.Altura - y - 1
+				implementación.Pixeles[fila*implementación.Juego.Anchura*4+x*4+0] = byte(rojo)
+				implementación.Pixeles[fila*implementación.Juego.Anchura*4+x*4+1] = byte(verde)
+				implementación.Pixeles[fila*implementación.Juego.Anchura*4+x*4+2] = byte(azul)
+				implementación.Pixeles[fila*implementación.Juego.Anchura*4+x*4+3] = 255
+			}
 		}
+		gl.TexSubImage2D(gl.TEXTURE_2D, 0, 0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura), gl.RGBA, gl.UNSIGNED_BYTE, gl.Ptr(implementación.Pixeles))
+		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, implementación.búfer)
+		gl.BlitFramebuffer(0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura),
+			0, 0, int32(implementación.Juego.Anchura), int32(implementación.Juego.Altura),
+			gl.COLOR_BUFFER_BIT, gl.LINEAR)
+		gl.BindFramebuffer(gl.READ_FRAMEBUFFER, 0)
+		implementación.Ventana.SwapBuffers()
+		implementación.Juego.HayQueDibujar = false
 	}
 }
 
 type Fuente struct {
 	Nombre   string
-	Símbolos map[rune]*Símbolo
-	Runas    map[rune]string
+	Símbolos map[string]*Símbolo
+	Imágenes map[string]string
 }
 
 func CrearFuente(nombre string) *Fuente {
 	fuente := new(Fuente)
 	fuente.Nombre = nombre
-	fuente.LeerRunas()
+	fuente.LeerImágenes()
 	fuente.LeerSímbolos()
 	//Imprimir("Runas:", fuente.Runas)
 	//Imprimir("Símbolos:", fuente.Símbolos)
@@ -355,13 +490,13 @@ func (fuente *Fuente) ContieneRuna(runa rune) bool {
 */
 
 func (fuente *Fuente) LeerSímbolos() {
-	fuente.Símbolos = make(map[rune]*Símbolo)
-	for runa, imagen := range fuente.Runas {
-		fuente.Símbolos[runa] = CrearSímboloDesdeImagen(fuente.Nombre, imagen)
+	fuente.Símbolos = make(map[string]*Símbolo)
+	for nombre, imagen := range fuente.Imágenes {
+		fuente.Símbolos[nombre] = CrearSímboloDesdeImagen(fuente.Nombre, imagen)
 	}
 }
 
-func (fuente *Fuente) LeerRunas() {
+func (fuente *Fuente) LeerImágenes() {
 	archivo, err := os.Open("fuentes/" + fuente.Nombre + "/fuente.json")
 	if err != nil {
 		panic(err)
@@ -378,18 +513,18 @@ func (fuente *Fuente) LeerRunas() {
 		panic(err)
 	}
 	//Imprimir("Runas:", runas)
-	fuente.Runas = make(map[rune]string)
+	fuente.Imágenes = make(map[string]string)
 	for _, dupla := range runas {
 		dupla := dupla.([]interface{})
-		cadenaDeRuna := dupla[0].(string)
-		runa := []rune(cadenaDeRuna)[0]
+		nombre := dupla[0].(string)
 		imagen := dupla[1].(string)
 		//Imprimir(reflect.TypeOf(dupla[0]))
-		fuente.Runas[runa] = imagen
+		fuente.Imágenes[nombre] = imagen
 	}
 }
 
 type Juego struct {
+	IU              *IU
 	Pantalla        *Pantalla
 	Fuente          *Fuente
 	Pixeles         *Bidimensional
@@ -401,6 +536,7 @@ type Juego struct {
 	Implementación  *Implementación
 	Altura          int
 	Anchura         int
+	HayQueDibujar   bool
 }
 
 //CrearDatosDelJuego es una función
@@ -408,8 +544,10 @@ func CrearJuego() *Juego {
 	juego := new(Juego)
 	juego.Anchura = 1024
 	juego.Altura = 512
-	juego.PseudoTamaño = 2
+	juego.PseudoTamaño = 1
 	juego.TamañoDeSímbolo = 16
+	juego.HayQueDibujar = true
+
 	/*juego.SímboloVacío = CrearSímbolo([][]byte{
 		{0, 0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 0, 0, 0, 0, 0},
@@ -421,11 +559,10 @@ func CrearJuego() *Juego {
 		{0, 0, 0, 0, 0, 0, 0, 0},
 	})*/
 	juego.Fuente = CrearFuente("principal")
-	juego.SímboloVacío = CrearSímboloDesdeImagen(juego.Fuente.Nombre, "8")
 	pantalla := CrearPantalla(
 		juego.Anchura/juego.TamañoDeSímbolo/juego.PseudoTamaño,
 		juego.Altura/juego.TamañoDeSímbolo/juego.PseudoTamaño,
-		juego.SímboloVacío,
+		juego.Fuente.Símbolos["nulo"],
 	)
 	juego.Pantalla = pantalla
 	juego.Implementación = CrearImplementación(juego)
@@ -439,8 +576,37 @@ func CrearJuego() *Juego {
 	)*/
 	juego.Pixeles = juego.CrearPixeles(juego.Anchura, juego.Altura)
 	juego.PseudoPixeles = juego.CrearPixeles(juego.Anchura/juego.PseudoTamaño, juego.Altura/juego.PseudoTamaño)
-
+	juego.IU = juego.CrearIU()
+	juego.Dibujar()
 	return juego
+}
+
+func (juego *Juego) CrearWidgetDeEntrada() *WidgetDeEntrada {
+	widgetDeEntrada := new(WidgetDeEntrada)
+	widgetDeEntrada.Anchura = juego.IU.Anchura
+	widgetDeEntrada.Altura = 3
+	widgetDeEntrada.Símbolos = CrearBidimensional(widgetDeEntrada.Anchura, widgetDeEntrada.Altura, juego.Fuente.Símbolos["nulo"])
+	widgetDeEntrada.LlenarSímbolos(juego.Fuente)
+	return widgetDeEntrada
+}
+
+func (juego *Juego) CrearWidgetDeSalida() *WidgetDeSalida {
+	widgetDeSalida := new(WidgetDeSalida)
+	widgetDeSalida.Anchura = juego.IU.Anchura
+	widgetDeSalida.Altura = juego.IU.Altura - 3
+	widgetDeSalida.Símbolos = CrearBidimensional(widgetDeSalida.Anchura, widgetDeSalida.Altura, juego.Fuente.Símbolos[" "])
+	return widgetDeSalida
+}
+
+func (juego *Juego) CrearIU() *IU {
+	iu := new(IU)
+	juego.IU = iu
+	iu.Altura = juego.Pantalla.LeerAltura()
+	iu.Anchura = juego.Pantalla.LeerAnchura()
+	iu.WidgetDeEntrada = juego.CrearWidgetDeEntrada()
+	iu.WidgetDeSalida = juego.CrearWidgetDeSalida()
+	iu.Símbolos = CrearBidimensional(iu.Anchura, iu.Altura, juego.Fuente.Símbolos["nulo"])
+	return iu
 }
 
 func (juego *Juego) CrearPixeles(anchura, altura int) *Bidimensional {
@@ -486,20 +652,75 @@ func (juego *Juego) DibujarSímbolo(símbolo *Símbolo, fila, columna int) {
 
 func (juego *Juego) DibujarCelda(fila, columna int) {
 	interfaz := juego.Pantalla.Celdas.Leer(fila, columna)
-	celda := interfaz.(*Celda)
-	juego.DibujarSímbolo(celda.Símbolo, fila, columna)
+	símbolo := interfaz.(*Símbolo)
+	juego.DibujarSímbolo(símbolo, fila, columna)
+}
+
+func (juego *Juego) ActualizarIU() {
+	for fila := 0; fila < juego.IU.WidgetDeSalida.Altura; fila++ {
+		for columna := 0; columna < juego.IU.WidgetDeSalida.Anchura; columna++ {
+			juego.IU.Símbolos.Escribir(fila, columna, juego.IU.WidgetDeSalida.Símbolos.Leer(fila, columna))
+		}
+	}
+	for fila := juego.IU.WidgetDeSalida.Altura; fila < juego.IU.WidgetDeSalida.Altura+juego.IU.WidgetDeEntrada.Altura; fila++ {
+		for columna := 0; columna < juego.IU.WidgetDeEntrada.Anchura; columna++ {
+			juego.IU.Símbolos.Escribir(fila, columna, juego.IU.WidgetDeEntrada.Símbolos.Leer(fila-juego.IU.WidgetDeSalida.Altura, columna))
+		}
+	}
+}
+
+func (juego *Juego) ActualizarPantalla() {
+	juego.ActualizarIU()
+	for fila := 0; fila < juego.Pantalla.LeerAltura(); fila++ {
+		for columna := 0; columna < juego.Pantalla.LeerAnchura(); columna++ {
+			juego.Pantalla.Celdas.Escribir(fila, columna, juego.IU.Símbolos.Leer(fila, columna))
+		}
+	}
 }
 
 func (juego *Juego) Dibujar() {
+	juego.ActualizarPantalla()
 	for fila := 0; fila < juego.Pantalla.LeerAltura(); fila++ {
 		for columna := 0; columna < juego.Pantalla.LeerAnchura(); columna++ {
 			juego.DibujarCelda(fila, columna)
 		}
 	}
+	juego.HayQueDibujar = true
+}
+
+func (juego *Juego) CadenaASímbolos(cadena string) []*Símbolo {
+	var línea []*Símbolo
+	cadena = strings.ToUpper(cadena)
+	runas := []rune(cadena)
+	var cadenas []string
+	for índice := 0; índice < len(runas); índice++ {
+		cadenas = append(cadenas, string(runas[índice]))
+	}
+	for índice := 0; índice < len(cadenas); índice++ {
+		línea = append(línea, juego.Fuente.Símbolos[cadenas[índice]])
+	}
+	return línea
+}
+
+func (juego *Juego) Escribir(cadena string) {
+	línea := juego.CadenaASímbolos(cadena)
+	juego.IU.WidgetDeSalida.Escribir(línea, juego.Fuente)
 }
 
 func (juego *Juego) Jugar() {
 	juego.Implementación.Correr()
+}
+
+func (juego *Juego) HiloLógico() {
+	//juego.Escribir("Bienvenido a VidaEsVida")
+	//juego.Escribir("Bienvenido a VidaEsVida")
+	//juego.Escribir("aaaaaaaaaaaaaaaaaaaaaaa")
+	//juego.Escribir("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	for i := 0; i < 64; i++ {
+		juego.Escribir("i: " + strconv.Itoa(i))
+	}
+	juego.Dibujar()
+	//Imprimir("juego.Escribir(\"Bienvenido a VidaEsVida\"")
 }
 
 func init() {
