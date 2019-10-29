@@ -754,7 +754,7 @@ func CrearJuego() *Juego {
 	juego := new(Juego)
 	juego.Anchura = 1024
 	juego.Altura = 512
-	juego.PseudoTamaño = 1
+	juego.PseudoTamaño = 2
 	juego.TamañoDeSímbolo = 16
 	juego.HayQueDibujar = true
 

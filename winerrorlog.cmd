@@ -1,1 +1,1 @@
-VidaEsVida.exe > error.log 2>&1
+VidaNoVida.exe > error.log 2>&1
