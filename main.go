@@ -327,6 +327,7 @@ func (juego *Juego) PreguntarSoloOMultijugador() {
 	juego.Escribir("Escoje el modo de juego que quieres jugar ¿Multi-Jugador o de 1 jugador?")
 	juego.Escribir("A) Multi-jugador")
 	juego.Escribir("B) 1 Jugador")
+	juego.Dibujar()
 a:
 	for {
 		comando := juego.LeerComando()
@@ -339,13 +340,20 @@ a:
 			break a
 		} else {
 			juego.Escribir("Recuerda escribir una de las Opciones (A,B)")
+			juego.Dibujar()
 		}
 	}
 
 }
 
-//BucleLogico function
-func (juego *Juego) BucleLogico() {
+func (juego *Juego) HiloLógico() {
+	//juego.Escribir("Bienvenido a VidaEsVida")
+	//juego.Escribir("Bienvenido a VidaEsVida")
+	//juego.Escribir("aaaaaaaaaaaaaaaaaaaaaaa")
+	//juego.Escribir("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+	juego.Escribir("Bienvenido a VidaNoVida")
+	//juego.Dibujar()
+	//Imprimir("juego.Escribir(\"Bienvenido a VidaEsVida\"")
 	juego.PreguntarSoloOMultijugador()
 }
 
@@ -482,7 +490,7 @@ func (widget *WidgetDeEntrada) LlenarSímbolos(fuente *Fuente) {
 func (widget *WidgetDeEntrada) Leer(fila, columna int, fuente *Fuente) *Símbolo {
 	switch fila {
 	case 0:
-		return fuente.Símbolos["bloque"]
+		return fuente.Símbolos["línea horizontal"]
 	case 1:
 		if columna >= 0 && columna < 3 {
 			if columna == 1 {
@@ -503,7 +511,7 @@ func (widget *WidgetDeEntrada) Leer(fila, columna int, fuente *Fuente) *Símbolo
 		}
 		return fuente.Símbolos[" "]
 	case 2:
-		return fuente.Símbolos["bloque"]
+		return fuente.Símbolos["línea horizontal"]
 	}
 	return fuente.Símbolos["nulo"]
 }
@@ -1160,8 +1168,8 @@ func CrearJuego() *Juego {
 	)
 	juego.Pantalla = pantalla
 	juego.Implementación = CrearImplementación(juego)
-	juego.Colores = append(juego.Colores, &Color{Rojo: 255, Verde: 255, Azul: 255})
 	juego.Colores = append(juego.Colores, &Color{Rojo: 0, Verde: 0, Azul: 0})
+	juego.Colores = append(juego.Colores, &Color{Rojo: 255, Verde: 255, Azul: 0})
 	//juego.Pixeles = CrearBidimensional(juego.Anchura, juego.Altura, Píxel{Color: Color{Rojo: 0, Verde: 0, Azul: 0}})
 	/*juego.PseudoPixeles = CrearBidimensional(
 		juego.Anchura/juego.PseudoTamaño,
@@ -1330,26 +1338,24 @@ func (juego *Juego) CadenaASímbolos(cadena string) []*Símbolo {
 }
 
 func (juego *Juego) Escribir(cadena string) {
-	línea := juego.CadenaASímbolos(cadena)
-	juego.IU.WidgetDeSalida.Escribir(línea, juego.Fuente)
+	cadenas := strings.Split(cadena, "\n")
+	Imprimir(cadena)
+	var líneas [][]*Símbolo
+	for índice := 0; índice < len(cadenas); índice++ {
+		línea := juego.CadenaASímbolos(cadenas[índice])
+		líneas = append(líneas, línea)
+	}
+	for índice := 0; índice < len(líneas); índice++ {
+		juego.IU.WidgetDeSalida.Escribir(líneas[índice], juego.Fuente)
+	}
+	var separador []*Símbolo
+	separador = append(separador, juego.Fuente.Símbolos[" "])
+	juego.IU.WidgetDeSalida.Escribir(separador, juego.Fuente)
+
 }
 
 func (juego *Juego) Jugar() {
 	juego.Implementación.Correr()
-}
-
-func (juego *Juego) HiloLógico() {
-	//juego.Escribir("Bienvenido a VidaEsVida")
-	//juego.Escribir("Bienvenido a VidaEsVida")
-	//juego.Escribir("aaaaaaaaaaaaaaaaaaaaaaa")
-	//juego.Escribir("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
-	for i := 0; i < 64; i++ {
-		juego.Escribir("i: " + strconv.Itoa(i))
-		//Imprimir(i)
-	}
-	juego.Dibujar()
-	//Imprimir("juego.Escribir(\"Bienvenido a VidaEsVida\"")
-	juego.PreguntarSoloOMultijugador()
 }
 
 func init() {

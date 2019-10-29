@@ -56,5 +56,6 @@
     [":", "dos puntos"],
     ["nulo", "nulo"],
     [" ", "espacio"],
-    ["bloque", "bloque"]
+    ["bloque", "bloque"],
+    ["línea horizontal", "línea horizontal"]
 ]
