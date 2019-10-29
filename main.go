@@ -306,9 +306,7 @@ func (juego *Juego) JugarMultijugador() {
 func (juego *Juego) JugarUnJugador() {
 	juego.Escribir("Escoje cuatro cartas para tu mano inicial")
 	for i := 0; i < len(ArregloDeCartas); i++ {
-
 		juego.Escribir(strconv.Itoa(i+1) + ")\n" + JSONIdentado(ArregloDeCartas[i].ObtenerInterfaz()))
-
 	}
 	juego.Dibujar()
 }
@@ -1232,6 +1230,11 @@ func (juego *Juego) DibujarPseudoPíxel(color *Color, fila, columna int) {
 }
 
 func (juego *Juego) DibujarSímbolo(símbolo *Símbolo, fila, columna int) {
+	if símbolo == nil {
+		//Imprimir("Fila", fila)
+		//Imprimir("Columna", columna)
+		símbolo = juego.Fuente.Símbolos["nulo"]
+	}
 	yInicial := fila * juego.TamañoDeSímbolo
 	xInicial := columna * juego.TamañoDeSímbolo
 	yFinal := yInicial + juego.TamañoDeSímbolo
