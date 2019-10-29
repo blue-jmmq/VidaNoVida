@@ -17,273 +17,272 @@ import (
 	"github.com/go-gl/glfw/v3.2/glfw"
 )
 
-type StatisticsPerLevel struct {
-	CostPerLevel       int
-	HealthPerLevel     int
-	RedArmorPerLever   int
-	BlueArmorPerLevel  int
-	RedDamagePerLever  int
-	BlueDamagePerLever int
-	HealingPerLever    int
+type EstadísticasPorNivel struct {
+	CostoPorNivel        int
+	VidaPorNivel         int
+	ArmaduraRojaPorNivel int
+	ArmaduraAzulPorNivel int
+	DañoRojoPorNivel     int
+	DañoAzulPorNivel     int
+	CuraciónPorNivel     int
 }
 
-//Card structure
-type Card struct {
-	Name               string
-	Descripción        string
-	Cost               int
-	Health             int
-	RedArmor           int
-	BlueArmor          int
-	RedDamage          int
-	BlueDamage         int
-	Healing            int
-	AntiAttackSpeed    int
-	Range              int
-	Level              int
-	Experience         int
-	StatisticsPerLevel *StatisticsPerLevel
+type Carta struct {
+	Nombre               string
+	Descripción          string
+	Costo                int
+	Vida                 int
+	ArmaduraRoja         int
+	ArmaduraAzul         int
+	DañoRojo             int
+	DañoAzul             int
+	Curación             int
+	AntiVelocidad        int
+	Rango                int
+	Nivel                int
+	Experiencia          int
+	EstadísticasPorNivel *EstadísticasPorNivel
 }
 
-//NewWarriorCard creates a Warrior Card
-func NewWarriorCard() *Card {
-	return &Card{
-		Name:            "Guerrero",
-		Descripción:     "Noble caballero de la Edad Media con sus armaduras y armas que se caracteriza por su resistencia y su ataque fisico",
-		Cost:            1,
-		RedDamage:       4,
-		BlueDamage:      1,
-		Healing:         0,
-		RedArmor:        4,
-		BlueArmor:       2,
-		AntiAttackSpeed: 4,
-		Range:           1,
-		Level:           1,
-		Experience:      0,
-		StatisticsPerLevel: &StatisticsPerLevel{
-			CostPerLevel:       1,
-			HealthPerLevel:     1,
-			RedArmorPerLever:   2,
-			BlueArmorPerLevel:  1,
-			HealingPerLever:    0,
-			RedDamagePerLever:  2,
-			BlueDamagePerLever: 0,
+//NuevaCartaDeGuerrero creates a Warrior Carta
+func NuevaCartaDeGuerrero() *Carta {
+	return &Carta{
+		Nombre:        "Guerrero",
+		Descripción:   "Noble caballero de la Edad Media con sus armaduras y armas que se caracteriza por su resistencia y su ataque fisico",
+		Costo:         1,
+		DañoRojo:      4,
+		DañoAzul:      1,
+		Curación:      0,
+		ArmaduraRoja:  4,
+		ArmaduraAzul:  2,
+		AntiVelocidad: 4,
+		Rango:         1,
+		Nivel:         1,
+		Experiencia:   0,
+		EstadísticasPorNivel: &EstadísticasPorNivel{
+			CostoPorNivel:        1,
+			VidaPorNivel:         1,
+			ArmaduraRojaPorNivel: 2,
+			ArmaduraAzulPorNivel: 1,
+			CuraciónPorNivel:     0,
+			DañoRojoPorNivel:     2,
+			DañoAzulPorNivel:     0,
 		},
 	}
 }
 
-//NewWarriorCard creates a Ninja Card
-func NewNinjaCard() *Card {
-	return &Card{
-		Name:            "Ninja",
-		Descripción:     "Ninja es considerado un mercenario tipo de guerrero japonés contratado para ejercer asesinatos caracterizado por su gran rapidez, su daño fisico y pobre defensa",
-		Cost:            1,
-		RedDamage:       2,
-		BlueDamage:      1,
-		Healing:         0,
-		RedArmor:        1,
-		BlueArmor:       1,
-		AntiAttackSpeed: 1,
-		Range:           1,
-		Level:           1,
-		Experience:      0,
-		StatisticsPerLevel: &StatisticsPerLevel{
-			CostPerLevel:       1,
-			HealthPerLevel:     1,
-			RedArmorPerLever:   2,
-			BlueArmorPerLevel:  1,
-			HealingPerLever:    0,
-			RedDamagePerLever:  1,
-			BlueDamagePerLever: 0,
+//NuevaCartaDeGuerrero creates a Ninja Carta
+func NuevaCartaDeNinja() *Carta {
+	return &Carta{
+		Nombre:        "Ninja",
+		Descripción:   "Ninja es considerado un mercenario tipo de guerrero japonés contratado para ejercer asesinatos caracterizado por su gran rapidez, su daño fisico y pobre defensa",
+		Costo:         1,
+		DañoRojo:      2,
+		DañoAzul:      1,
+		Curación:      0,
+		ArmaduraRoja:  1,
+		ArmaduraAzul:  1,
+		AntiVelocidad: 1,
+		Rango:         1,
+		Nivel:         1,
+		Experiencia:   0,
+		EstadísticasPorNivel: &EstadísticasPorNivel{
+			CostoPorNivel:        1,
+			VidaPorNivel:         1,
+			ArmaduraRojaPorNivel: 2,
+			ArmaduraAzulPorNivel: 1,
+			CuraciónPorNivel:     0,
+			DañoRojoPorNivel:     1,
+			DañoAzulPorNivel:     0,
 		},
 	}
 }
 
-//NewWarriorCard creates a Mage Card
-func NewMageCard() *Card {
-	return &Card{
-		Name:            "Mago",
-		Descripción:     "Considerados por muchos como un hechiceros especializados en la magia y el conosimiento mistico Caracterizados por su daño magico y defensa magica",
-		Cost:            1,
-		RedDamage:       1,
-		BlueDamage:      4,
-		Healing:         0,
-		RedArmor:        1,
-		BlueArmor:       4,
-		AntiAttackSpeed: 4,
-		Range:           3,
-		Level:           1,
-		Experience:      0,
-		StatisticsPerLevel: &StatisticsPerLevel{
-			CostPerLevel:       1,
-			HealthPerLevel:     1,
-			RedArmorPerLever:   2,
-			BlueArmorPerLevel:  1,
-			HealingPerLever:    0,
-			RedDamagePerLever:  0,
-			BlueDamagePerLever: 3,
+//NuevaCartaDeGuerrero creates a Mage Carta
+func NuevaCartaDeMago() *Carta {
+	return &Carta{
+		Nombre:        "Mago",
+		Descripción:   "Considerados por muchos como un hechiceros especializados en la magia y el conosimiento mistico Caracterizados por su daño magico y defensa magica",
+		Costo:         1,
+		DañoRojo:      1,
+		DañoAzul:      4,
+		Curación:      0,
+		ArmaduraRoja:  1,
+		ArmaduraAzul:  4,
+		AntiVelocidad: 4,
+		Rango:         3,
+		Nivel:         1,
+		Experiencia:   0,
+		EstadísticasPorNivel: &EstadísticasPorNivel{
+			CostoPorNivel:        1,
+			VidaPorNivel:         1,
+			ArmaduraRojaPorNivel: 2,
+			ArmaduraAzulPorNivel: 1,
+			CuraciónPorNivel:     0,
+			DañoRojoPorNivel:     0,
+			DañoAzulPorNivel:     3,
 		},
 	}
 }
 
-//NewWarriorCard creates a Ogre Card
-func NewOgreCard() *Card {
-	return &Card{
-		Name:            "Ogro",
-		Descripción:     "Un ogro es el miembro de una raza de humanoides grandes, fieros y crueles que comen carne humana",
-		Cost:            1,
-		RedDamage:       2,
-		BlueDamage:      0,
-		Healing:         0,
-		RedArmor:        8,
-		BlueArmor:       2,
-		AntiAttackSpeed: 4,
-		Range:           1,
-		Level:           1,
-		Experience:      0,
-		StatisticsPerLevel: &StatisticsPerLevel{
-			CostPerLevel:       1,
-			HealthPerLevel:     1,
-			RedArmorPerLever:   4,
-			BlueArmorPerLevel:  2,
-			HealingPerLever:    0,
-			RedDamagePerLever:  1,
-			BlueDamagePerLever: 0,
+//NuevaCartaDeGuerrero creates a Ogre Carta
+func NuevaCartaDeOgro() *Carta {
+	return &Carta{
+		Nombre:        "Ogro",
+		Descripción:   "Un ogro es el miembro de una raza de humanoides grandes, fieros y crueles que comen carne humana",
+		Costo:         1,
+		DañoRojo:      2,
+		DañoAzul:      0,
+		Curación:      0,
+		ArmaduraRoja:  8,
+		ArmaduraAzul:  2,
+		AntiVelocidad: 4,
+		Rango:         1,
+		Nivel:         1,
+		Experiencia:   0,
+		EstadísticasPorNivel: &EstadísticasPorNivel{
+			CostoPorNivel:        1,
+			VidaPorNivel:         1,
+			ArmaduraRojaPorNivel: 4,
+			ArmaduraAzulPorNivel: 2,
+			CuraciónPorNivel:     0,
+			DañoRojoPorNivel:     1,
+			DañoAzulPorNivel:     0,
 		},
 	}
 }
 
-//NewWarriorCard creates a Wizard elf Card
-func NewWizardElfCard() *Card {
-	return &Card{
-		Name:            "Elfo Mago",
-		Descripción:     "Misteriosos hasta para los otros miembros de clan elfico, usando su magia para llegar hasta donde los otros elfos no han llegado",
-		Cost:            1,
-		RedDamage:       1,
-		BlueDamage:      8,
-		Healing:         0,
-		RedArmor:        2,
-		BlueArmor:       3,
-		AntiAttackSpeed: 3,
-		Range:           8,
-		Level:           1,
-		Experience:      0,
-		StatisticsPerLevel: &StatisticsPerLevel{
-			CostPerLevel:       1,
-			HealthPerLevel:     1,
-			RedArmorPerLever:   1,
-			BlueArmorPerLevel:  2,
-			HealingPerLever:    0,
-			RedDamagePerLever:  0,
-			BlueDamagePerLever: 2,
+//NuevaCartaDeGuerrero creates a Wizard elf Carta
+func NuevaCartaDeElfoMago() *Carta {
+	return &Carta{
+		Nombre:        "Elfo Mago",
+		Descripción:   "Misteriosos hasta para los otros miembros de clan elfico, usando su magia para llegar hasta donde los otros elfos no han llegado",
+		Costo:         1,
+		DañoRojo:      1,
+		DañoAzul:      8,
+		Curación:      0,
+		ArmaduraRoja:  2,
+		ArmaduraAzul:  3,
+		AntiVelocidad: 3,
+		Rango:         8,
+		Nivel:         1,
+		Experiencia:   0,
+		EstadísticasPorNivel: &EstadísticasPorNivel{
+			CostoPorNivel:        1,
+			VidaPorNivel:         1,
+			ArmaduraRojaPorNivel: 1,
+			ArmaduraAzulPorNivel: 2,
+			CuraciónPorNivel:     0,
+			DañoRojoPorNivel:     0,
+			DañoAzulPorNivel:     2,
 		},
 	}
 }
 
-//NewWarriorCard creates a Archer Elf Card
-func CrearCartaDeElfoArquero() *Card {
-	return &Card{
-		Name:            "Elfo Arquero",
-		Descripción:     "Guerros del clan elfico que aprovecha las magia para sus ataques de larga distancia y portar un arco elfico con encantamientos de daño",
-		Cost:            1,
-		RedDamage:       6,
-		BlueDamage:      1,
-		Healing:         0,
-		RedArmor:        1,
-		BlueArmor:       1,
-		AntiAttackSpeed: 2,
-		Range:           7,
-		Level:           1,
-		Experience:      0,
-		StatisticsPerLevel: &StatisticsPerLevel{
-			CostPerLevel:       1,
-			HealthPerLevel:     1,
-			RedArmorPerLever:   1,
-			BlueArmorPerLevel:  1,
-			HealingPerLever:    0,
-			RedDamagePerLever:  3,
-			BlueDamagePerLever: 0,
+//NuevaCartaDeGuerrero creates a Archer Elf Carta
+func NuevaCartaDeElfoArquero() *Carta {
+	return &Carta{
+		Nombre:        "Elfo Arquero",
+		Descripción:   "Guerros del clan elfico que aprovecha las magia para sus ataques de larga distancia y portar un arco elfico con encantamientos de daño",
+		Costo:         1,
+		DañoRojo:      6,
+		DañoAzul:      1,
+		Curación:      0,
+		ArmaduraRoja:  1,
+		ArmaduraAzul:  1,
+		AntiVelocidad: 2,
+		Rango:         7,
+		Nivel:         1,
+		Experiencia:   0,
+		EstadísticasPorNivel: &EstadísticasPorNivel{
+			CostoPorNivel:        1,
+			VidaPorNivel:         1,
+			ArmaduraRojaPorNivel: 1,
+			ArmaduraAzulPorNivel: 1,
+			CuraciónPorNivel:     0,
+			DañoRojoPorNivel:     3,
+			DañoAzulPorNivel:     0,
 		},
 	}
 }
 
-//NewWarriorCard creates a Human archer Card
-func NewHumanArcherCard() *Card {
-	return &Card{
-		Name:            "Arquero Aumano",
-		Descripción:     "Humanos del antiguo clan de los Exiliados que disfrutanban llevar a la locura a sus victimas disparandoles flechzas hasta asesinarlos",
-		Cost:            1,
-		RedDamage:       8,
-		BlueDamage:      1,
-		Healing:         0,
-		RedArmor:        2,
-		BlueArmor:       1,
-		AntiAttackSpeed: 3,
-		Range:           6,
-		Level:           1,
-		Experience:      0,
-		StatisticsPerLevel: &StatisticsPerLevel{
-			CostPerLevel:       1,
-			HealthPerLevel:     1,
-			RedArmorPerLever:   2,
-			BlueArmorPerLevel:  1,
-			HealingPerLever:    0,
-			RedDamagePerLever:  2,
-			BlueDamagePerLever: 0,
+//NuevaCartaDeGuerrero creates a Human archer Carta
+func NuevaCartaDeArqueroHumano() *Carta {
+	return &Carta{
+		Nombre:        "Arquero Humano",
+		Descripción:   "Humanos del antiguo clan de los Exiliados que disfrutanban llevar a la locura a sus victimas disparandoles flechzas hasta asesinarlos",
+		Costo:         1,
+		DañoRojo:      8,
+		DañoAzul:      1,
+		Curación:      0,
+		ArmaduraRoja:  2,
+		ArmaduraAzul:  1,
+		AntiVelocidad: 3,
+		Rango:         6,
+		Nivel:         1,
+		Experiencia:   0,
+		EstadísticasPorNivel: &EstadísticasPorNivel{
+			CostoPorNivel:        1,
+			VidaPorNivel:         1,
+			ArmaduraRojaPorNivel: 2,
+			ArmaduraAzulPorNivel: 1,
+			CuraciónPorNivel:     0,
+			DañoRojoPorNivel:     2,
+			DañoAzulPorNivel:     0,
 		},
 	}
 }
 
-//NewWarriorCard creates a Priest Card
-func NewPriestCard() *Card {
-	return &Card{
-		Name:            "Sacerdote",
-		Descripción:     "Los sacerdotes están entregados a lo espiritual sirviendo a la gente con su inquebrantable fe y sus dones místicos dedicados a sanar a sus compañeros en la guerra",
-		Cost:            1,
-		RedDamage:       0,
-		BlueDamage:      1,
-		Healing:         3,
-		RedArmor:        2,
-		BlueArmor:       1,
-		AntiAttackSpeed: 4,
-		Range:           4,
-		Level:           1,
-		Experience:      0,
-		StatisticsPerLevel: &StatisticsPerLevel{
-			CostPerLevel:       1,
-			HealthPerLevel:     1,
-			RedArmorPerLever:   1,
-			BlueArmorPerLevel:  1,
-			HealingPerLever:    2,
-			RedDamagePerLever:  0,
-			BlueDamagePerLever: 0,
+//NuevaCartaDeGuerrero creates a Priest Carta
+func NuevaCartaDeSacerdote() *Carta {
+	return &Carta{
+		Nombre:        "Sacerdote",
+		Descripción:   "Los sacerdotes están entregados a lo espiritual sirviendo a la gente con su inquebrantable fe y sus dones místicos dedicados a sanar a sus compañeros en la guerra",
+		Costo:         1,
+		DañoRojo:      0,
+		DañoAzul:      1,
+		Curación:      3,
+		ArmaduraRoja:  2,
+		ArmaduraAzul:  1,
+		AntiVelocidad: 4,
+		Rango:         4,
+		Nivel:         1,
+		Experiencia:   0,
+		EstadísticasPorNivel: &EstadísticasPorNivel{
+			CostoPorNivel:        1,
+			VidaPorNivel:         1,
+			ArmaduraRojaPorNivel: 1,
+			ArmaduraAzulPorNivel: 1,
+			CuraciónPorNivel:     2,
+			DañoRojoPorNivel:     0,
+			DañoAzulPorNivel:     0,
 		},
 	}
 }
 
-//NewWarriorCard creates a Warlock Card
-func NewWarlockCard() *Card {
-	return &Card{
-		Name:            "Brujo",
-		Descripción:     "Los brujos son entrenados en las artes oscuras estos letales hechiceros usan su magia para ejercer dominacion sobre sus enemigos",
-		Cost:            1,
-		RedDamage:       1,
-		BlueDamage:      4,
-		Healing:         1,
-		RedArmor:        1,
-		BlueArmor:       1,
-		AntiAttackSpeed: 4,
-		Range:           3,
-		Level:           1,
-		Experience:      0,
-		StatisticsPerLevel: &StatisticsPerLevel{
-			CostPerLevel:       1,
-			HealthPerLevel:     1,
-			RedArmorPerLever:   1,
-			BlueArmorPerLevel:  1,
-			HealingPerLever:    1,
-			RedDamagePerLever:  0,
-			BlueDamagePerLever: 2,
+//NuevaCartaDeGuerrero creates a Warlock Carta
+func NuevaCartaDeBrujo() *Carta {
+	return &Carta{
+		Nombre:        "Brujo",
+		Descripción:   "Los brujos son entrenados en las artes oscuras estos letales hechiceros usan su magia para ejercer dominacion sobre sus enemigos",
+		Costo:         1,
+		DañoRojo:      1,
+		DañoAzul:      4,
+		Curación:      1,
+		ArmaduraRoja:  1,
+		ArmaduraAzul:  1,
+		AntiVelocidad: 4,
+		Rango:         3,
+		Nivel:         1,
+		Experiencia:   0,
+		EstadísticasPorNivel: &EstadísticasPorNivel{
+			CostoPorNivel:        1,
+			VidaPorNivel:         1,
+			ArmaduraRojaPorNivel: 1,
+			ArmaduraAzulPorNivel: 1,
+			CuraciónPorNivel:     1,
+			DañoRojoPorNivel:     0,
+			DañoAzulPorNivel:     2,
 		},
 	}
 }
@@ -360,36 +359,36 @@ func (juego *Juego) HiloLógico() {
 	juego.PreguntarSoloOMultijugador()
 }
 
-func (carta *Card) ObtenerInterfaz() *InterfazDeCarta {
+func (carta *Carta) ObtenerInterfaz() *InterfazDeCarta {
 	var interfaz InterfazDeCarta
-	interfaz.Nombre = carta.Name
-	interfaz.Costo = carta.Cost
+	interfaz.Nombre = carta.Nombre
+	interfaz.Costo = carta.Costo
 	interfaz.Descripción = carta.Descripción
 	return &interfaz
 }
 
 //Arreglo de Cartas
-var ArregloDeCartas []*Card = []*Card{
-	NewWarriorCard(),
-	NewNinjaCard(),
-	NewMageCard(),
-	NewOgreCard(),
-	NewWizardElfCard(),
-	CrearCartaDeElfoArquero(),
-	NewHumanArcherCard(),
-	NewPriestCard(),
-	NewWarlockCard(),
+var ArregloDeCartas []*Carta = []*Carta{
+	NuevaCartaDeGuerrero(),
+	NuevaCartaDeNinja(),
+	NuevaCartaDeMago(),
+	NuevaCartaDeOgro(),
+	NuevaCartaDeElfoMago(),
+	NuevaCartaDeElfoArquero(),
+	NuevaCartaDeArqueroHumano(),
+	NuevaCartaDeSacerdote(),
+	NuevaCartaDeBrujo(),
 }
 
 //Player structure
 type Player struct {
-	Health   int
-	RedArmor int
-	Energy   int
-	Credit   int
-	Deck     []Card
-	Hand     []Card
-	Board    [][]Card
+	Vida         int
+	ArmaduraRoja int
+	Energy       int
+	Credit       int
+	Deck         []Carta
+	Hand         []Carta
+	Board        [][]Carta
 }
 
 //JSON es una función
