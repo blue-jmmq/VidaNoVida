@@ -1,1 +1,1 @@
-go fmt github.com/blue-jmmq/VidaEsVida
+go fmt github.com/blue-jmmq/VidaNoVida
