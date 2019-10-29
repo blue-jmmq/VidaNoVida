@@ -305,6 +305,9 @@ func (juego *Juego) JugarMultijugador() {
 }
 func (juego *Juego) JugarUnJugador() {
 	juego.Escribir("Escoje cuatro cartas para tu mano inicial")
+	juego.Escribir("Presiona la tecla ENTER para ver las cartas disponibles")
+	juego.Dibujar()
+	juego.LeerComando()
 	for i := 0; i < len(ArregloDeCartas); i++ {
 		juego.Escribir(strconv.Itoa(i+1) + ")\n" + JSONIdentado(ArregloDeCartas[i].ObtenerInterfaz()))
 	}
@@ -332,10 +335,10 @@ a:
 	for {
 		comando := juego.LeerComando()
 		cadenaDeComando := juego.SimbolosACadena(comando)
-		if strings.EqualFold(cadenaDeComando, "a") {
+		if strings.EqualFold(cadenaDeComando, "A") {
 			juego.JugarMultijugador()
 			break a
-		} else if strings.EqualFold(cadenaDeComando, "b") {
+		} else if strings.EqualFold(cadenaDeComando, "B") {
 			juego.JugarUnJugador()
 			break a
 		} else {
@@ -927,8 +930,8 @@ func CrearImplementación(juego *Juego) *Implementación {
 	return &implementación
 }
 func (juego *Juego) EnviarComando() {
+	juego.CanalDeComandos <- juego.IU.WidgetDeEntrada.Búfer
 	if len(juego.IU.WidgetDeEntrada.Búfer) > 0 {
-		juego.CanalDeComandos <- juego.IU.WidgetDeEntrada.Búfer
 		juego.IU.WidgetDeEntrada.Búfer = make([]*Símbolo, 0)
 		juego.IU.WidgetDeEntrada.Índice = 0
 	}
@@ -981,7 +984,7 @@ func (implementación *Implementación) Correr() {
 	glfw.WindowHint(glfw.OpenGLProfile, glfw.OpenGLCoreProfile)
 	glfw.WindowHint(glfw.OpenGLForwardCompatible, glfw.True)
 
-	ventana, err := glfw.CreateWindow(implementación.Juego.Anchura, implementación.Juego.Altura, "Testing", nil, nil)
+	ventana, err := glfw.CreateWindow(implementación.Juego.Anchura, implementación.Juego.Altura, "VidaNoVida", nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -1339,19 +1342,18 @@ func (juego *Juego) CadenaASímbolos(cadena string) []*Símbolo {
 
 func (juego *Juego) Escribir(cadena string) {
 	cadenas := strings.Split(cadena, "\n")
-	Imprimir(cadena)
+	//Imprimir(cadena)
 	var líneas [][]*Símbolo
 	for índice := 0; índice < len(cadenas); índice++ {
 		línea := juego.CadenaASímbolos(cadenas[índice])
 		líneas = append(líneas, línea)
 	}
+	var separador []*Símbolo
+	separador = append(separador, juego.Fuente.Símbolos[" "])
 	for índice := 0; índice < len(líneas); índice++ {
 		juego.IU.WidgetDeSalida.Escribir(líneas[índice], juego.Fuente)
 	}
-	var separador []*Símbolo
-	separador = append(separador, juego.Fuente.Símbolos[" "])
 	juego.IU.WidgetDeSalida.Escribir(separador, juego.Fuente)
-
 }
 
 func (juego *Juego) Jugar() {

@@ -57,5 +57,6 @@
     ["nulo", "nulo"],
     [" ", "espacio"],
     ["bloque", "bloque"],
+    [",", ","],
     ["línea horizontal", "línea horizontal"]
 ]
