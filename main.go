@@ -922,6 +922,7 @@ func (juego *Juego) EnviarComando() {
 	if len(juego.IU.WidgetDeEntrada.Búfer) > 0 {
 		juego.CanalDeComandos <- juego.IU.WidgetDeEntrada.Búfer
 		juego.IU.WidgetDeEntrada.Búfer = make([]*Símbolo, 0)
+		juego.IU.WidgetDeEntrada.Índice = 0
 	}
 }
 
