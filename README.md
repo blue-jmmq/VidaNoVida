@@ -1,2 +1,2 @@
-# VidaEsVida
- Game
+# VidaNoVida
+ Juego de cartas
