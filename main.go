@@ -1171,7 +1171,7 @@ func CrearJuego() *Juego {
 	juego.Pantalla = pantalla
 	juego.Implementación = CrearImplementación(juego)
 	juego.Colores = append(juego.Colores, &Color{Rojo: 0, Verde: 0, Azul: 0})
-	juego.Colores = append(juego.Colores, &Color{Rojo: 255, Verde: 255, Azul: 0})
+	juego.Colores = append(juego.Colores, &Color{Rojo: 140, Verde: 140, Azul: 140})
 	//juego.Pixeles = CrearBidimensional(juego.Anchura, juego.Altura, Píxel{Color: Color{Rojo: 0, Verde: 0, Azul: 0}})
 	/*juego.PseudoPixeles = CrearBidimensional(
 		juego.Anchura/juego.PseudoTamaño,
