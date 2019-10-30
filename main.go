@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"runtime"
 	"strconv"
@@ -299,10 +300,31 @@ func (juego *Juego) LeerComando() []*Símbolo {
 	command := <-juego.CanalDeComandos
 	return command
 }
+
+//agregar carta Aleatoria
+func (juego *Juego) AgregarCartaAleatoria(jugador *Jugador) {
+	indiceAleatorio := rand.Intn(len(ArregloDeCartas))
+	funcionCreadora := ArregloDeConstructoresDeCartas[indiceAleatorio]
+	carta := funcionCreadora()
+	jugador.Mano = append(jugador.Mano, carta)
+}
+
+//crear jugador
+func (juego *Juego) Crearjugador() *Jugador {
+	jugador := new(Jugador)
+	jugador.Vida = 32
+	jugador.ArmaduraRoja = 12
+	jugador.Credito = 4
+	jugador.Mano = nil
+	//Tablero      [][]Cartajugador.
+	return jugador
+}
 func (juego *Juego) JugarMultijugador() {
 
 }
 func (juego *Juego) JugarUnJugador() {
+	juego.Jugador1 = juego.Crearjugador()
+	juego.Jugador2 = juego.Crearjugador()
 	juego.Escribir("Escoje cuatro cartas para tu mano inicial")
 	juego.Escribir("Presiona la tecla ENTER para ver las cartas disponibles")
 	juego.Dibujar()
@@ -310,13 +332,50 @@ func (juego *Juego) JugarUnJugador() {
 	for i := 0; i < len(ArregloDeCartas); i++ {
 		juego.Escribir(strconv.Itoa(i+1) + ")\n" + JSONIdentado(ArregloDeCartas[i].ObtenerInterfaz()))
 	}
+	juego.Escribir("Presciona Enter cuando estes listo para escojer una carta")
+	go juego.HiloDeTemporizadorDeSeleccion()
+a:
+	juego.LeerComando()
+	if juego.TiempoTranscurrido >= 10 {
+		juego.Escribir("Lo sentimos ya acabo tu tiempo")
+		juego.AgregarCartaAleatoria(juego.Jugador1)
+	} else {
+		NCarta, err := juego.ConvertirStringAInt(juego.SimbolosACadena(juego.LeerComando()))
+		if err != nil {
+			goto a
+		}
+		if NCarta < 1 || NCarta > len(ArregloDeCartas) {
+			juego.Escribir("Solo puedes escribir un número que corresponda a una carta existente")
+			goto a
+		}
+	}
+
 	juego.Dibujar()
+}
+func (juego *Juego) HiloDeTemporizadorDeSeleccion() {
+	juego.TiempoDeSeleccion = 10
+	juego.TiempoTranscurrido = 0
+	juego.TemporizadorDeSeleccion = time.NewTimer(time.Duration(1) * time.Second)
+	for segundos := 0; segundos < juego.TiempoDeSeleccion; segundos++ {
+		juego.Escribir("Tienes " + ConvetirIntAString(juego.TiempoDeSeleccion-juego.TiempoTranscurrido) + " Segundos para elegir tu primera carta")
+		<-juego.TemporizadorDeSeleccion.C
+		juego.TemporizadorDeSeleccion.Reset(1 * time.Second)
+		juego.TiempoTranscurrido += 1
+	}
+}
+
+//Convertir de string a Int
+func (juego *Juego) ConvertirStringAInt(cadena string) (int, error) {
+	Entero, Er := strconv.Atoi(cadena)
+	if Er != nil {
+		juego.Escribir("Solo puedes ingresar Caracteres Numericos")
+	}
+	return Entero, Er
 }
 
 //Convertir arreglo de simbolos a una cadena
 func (juego *Juego) SimbolosACadena(simbolos []*Símbolo) string {
 	var comando string
-
 	for indice := 0; indice < len(simbolos); indice++ {
 		cadena := juego.Fuente.Cadenas[simbolos[indice]]
 		//comando = comando + cadena
@@ -367,6 +426,18 @@ func (carta *Carta) ObtenerInterfaz() *InterfazDeCarta {
 	return &interfaz
 }
 
+var ArregloDeConstructoresDeCartas []func() *Carta = []func() *Carta{
+	NuevaCartaDeGuerrero,
+	NuevaCartaDeNinja,
+	NuevaCartaDeMago,
+	NuevaCartaDeOgro,
+	NuevaCartaDeElfoMago,
+	NuevaCartaDeElfoArquero,
+	NuevaCartaDeArqueroHumano,
+	NuevaCartaDeSacerdote,
+	NuevaCartaDeBrujo,
+}
+
 //Arreglo de Cartas
 var ArregloDeCartas []*Carta = []*Carta{
 	NuevaCartaDeGuerrero(),
@@ -389,6 +460,11 @@ type Player struct {
 	Deck         []Carta
 	Hand         []Carta
 	Board        [][]Carta
+}
+
+//convertir int a string
+func ConvetirIntAString(entero int) string {
+	return strconv.Itoa(entero)
 }
 
 //JSON es una función
@@ -1124,22 +1200,35 @@ func (fuente *Fuente) LeerImágenes() {
 	}
 }
 
+type Jugador struct {
+	Vida         int
+	ArmaduraRoja int
+	Credito      int
+	Mano         []*Carta
+	Tablero      [][]*Carta
+}
+
 type Juego struct {
-	IU                    *IU
-	Pantalla              *Pantalla
-	Fuente                *Fuente
-	Pixeles               *Bidimensional
-	PseudoPixeles         *Bidimensional
-	PseudoTamaño          int
-	TamañoDeSímbolo       int
-	SímboloVacío          *Símbolo
-	Colores               []*Color
-	Implementación        *Implementación
-	Altura                int
-	Anchura               int
-	HayQueDibujar         bool
-	TemporizadorDelCursor *time.Timer
-	CanalDeComandos       chan []*Símbolo
+	IU                      *IU
+	Pantalla                *Pantalla
+	Fuente                  *Fuente
+	Pixeles                 *Bidimensional
+	PseudoPixeles           *Bidimensional
+	PseudoTamaño            int
+	TamañoDeSímbolo         int
+	SímboloVacío            *Símbolo
+	Colores                 []*Color
+	Implementación          *Implementación
+	Altura                  int
+	Anchura                 int
+	HayQueDibujar           bool
+	TemporizadorDelCursor   *time.Timer
+	CanalDeComandos         chan []*Símbolo
+	TiempoDeSeleccion       int
+	TemporizadorDeSeleccion *time.Timer
+	TiempoTranscurrido      int
+	Jugador1                *Jugador
+	Jugador2                *Jugador
 }
 
 //CrearDatosDelJuego es una función
